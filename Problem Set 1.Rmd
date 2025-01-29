@@ -1,0 +1,118 @@
+---
+title: "Problem Set 1"
+author: "Jonathan Bachrach"
+date: "2025-01-28"
+output: pdf_document
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set( 
+  echo = TRUE, #do you want to show the code?
+  eval = TRUE, #do you want to actually run the code?
+  fig.align = 'center', #align charts
+  message = FALSE, #do you want to show error and warning messages?
+  warning = FALSE
+)
+
+  library(tidyverse)
+  library(knitr)
+```
+
+### 1) Briefly describe the dataset. What country did you choose? How many respondents are there in the survey, and when were the interviews conducted?
+
+The data set includes the results of a survey conducted in Nigeria between March 5th and April 1st 2022. It includes 1600 responses to a range of questions regarding a wide range of topics relevant to Nigerians, including social and political issues, perception of foreign countries, government approval, etc.
+
+This information was extracted using the code below:
+```{r}
+afro <- read_csv("from_sav_data.csv")
+
+select(afro,
+       respondants = RESPNO,
+       date = DATEINTR) %>%
+  summary(.) %>%
+  kable(.)
+
+```
+
+### 2) Describe your respondents. Using appropriate descriptive statistics, tell me about their ages, distributions of male vs. female respondents, language, etc.
+
+Gender data (variable Q100) was removed from the publicly-available data set, and was unavailable for this analysis.
+
+Ages of respondents ranged from 18 to 97, with an average respondee age of 34.91 years, and a median age of 32. 75% of respondees were under 41.
+
+
+```{r}
+afro <- read_csv("from_sav_data.csv")
+view(afro)
+
+select(afro,
+       age = Q1) %>%
+  summary(.) %>%
+  kable(.)
+```
+
+Interviews were most frequently conducted in Hausa (524 interviews; 33%). Other frequently used languages include Yoruba (282 interviews), Igbo (186 interviews), and English (120 interviews). A smaller number of interviews were conducted in other languages such as Pidgin English, Efik, Ebira, Fulani, and Isoko.
+
+
+```{r}
+afro %>%
+  group_by(Q2) %>%
+  summarize(.,
+            n()) %>%
+  kable(.)
+
+```
+
+### 3) Describe attitudes about economic and political influence of China, Q78A in your data. Your answer should include a relative frequency table and a couple of quick sentences describing the data.
+
+Questions 78A and 78B asked respondents to rank the influence of China and the United States on Nigeria on a scale from 1 (very negative) to 5 (very positive). Respondents could also refuse (8) or answer "I don't know" (9).
+
+Perceptions of both countries were similar, with an average response of 3.639 for China and 3.564 for the United States.
+
+Interestingly, fewer individuals responded "I don't know" when asked about China (31%) than about the United States (39%), indicating that China may have a slight edge in terms of public awareness.
+
+4 and 5 were the most popular responses for both China and the USA, comprising 47% and 38% of each country's total responses.
+
+```{r}
+
+filter(afro,Q78A<6,Q78B<6) %>%
+  select(.,
+       china = Q78A,
+       USA = Q78B) %>%
+  summary(.) %>%
+  kable(.)
+
+chinatab <- count(afro,Q78A) %>%
+mutate(., proportion = prop.table(n))
+
+kable(chinatab)
+
+USAtab <- count(afro,Q78B) %>%
+  mutate(., proportion = prop.table(n))
+
+kable(USAtab)
+
+
+```
+
+### 4) Repeat this process for Q78B about the influence of the United States.
+
+See analysis of data above.
+
+### 5) Use a paired t-test to evaluate the difference between perceptions.
+
+At the 5% significance threshold, a statistically significant difference exists between the average perception of China and the United States among Nigerians. The difference between the means of responses for each question in the sample data was 0.075; a p-value of 0.028 indicates that the observed difference in mean values is unlikely to be the result of chance.
+
+```{r}
+
+afro =
+  afro %>%
+  mutate(
+    across(
+      Q78A:Q78B,
+      ~if_else(.x %in% 1:5, .x, NA)
+    )
+  )
+
+t.test(afro$Q78A, afro$Q78B, paired = TRUE)
+```
